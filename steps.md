@@ -1,0 +1,2 @@
+-initially, i used ijson, but it was a single quoted json and not a valid json. 
+- GCS Raw (original files) → GCS Processed (valid JSON) → BigQuery
