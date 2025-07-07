@@ -1,0 +1,58 @@
+version: 2
+
+sources:
+  - name: landing_zone
+    database: amazon-reviews-project-465010
+    schema: landing_zone
+    description: "Raw Amazon reviews and metadata from the landing zone"
+    
+    tables:
+      - name: items_dedup
+        description: "Amazon product reviews data - deduplicated items"
+        columns:
+          - name: reviewerID
+            description: "ID of the reviewer, e.g. A2SUAM1J3GNN3B"
+            tests:
+              - not_null    
+          - name: asin
+            description: "ID of the product, e.g. 0000013714"
+            tests:
+              - not_null
+          - name: reviewerName
+            description: "name of the reviewer"
+          - name: helpful
+            description: "helpfulness rating of the review, e.g. 2/3"
+          - name: reviewText
+            description: "text of the review"
+          - name: overall
+            description: "rating of the product"
+          - name: summary
+            description: "summary of the review"
+          - name: unixReviewTime
+            description: "time of the review (unix time)"
+          - name: reviewTime
+            description: "time of the review (raw)"
+
+      - name: metadata
+        description: "Amazon product metadata"
+        columns:
+          - name: asin
+            description: "ID of the product, e.g. 0000031852"
+            tests:
+              - not_null
+              - unique:
+                  severity: warn
+          - name: title
+            description: "name of the product"
+          - name: price
+            description: "price in US dollars (at time of crawl)"
+          - name: imUrl
+            description: "url of the product image"
+          - name: related
+            description: "related products (also bought, also viewed, bought together, buy after viewing)"
+          - name: salesRank
+            description: "sales rank information"
+          - name: brand
+            description: "brand name"
+          - name: categories
+            description: "list of categories the product belongs to"

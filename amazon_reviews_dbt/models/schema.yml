@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: silver_dim_date
+    description: "Date dimension table"
+    columns:
+      - name: date_id
+        tests:
+          - not_null
+          - unique
+      - name: year
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1,2,3,4,5,6,7,8,9,10,11,12]
+              quote: false 
+      - name: year_month
+        tests:
+          - not_null
+
+  - name: silver_dim_products
+    description: "Product dimension table"
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+
+  - name: silver_dim_reviewer
+    description: "Reviewer dimension table"
+    columns:
+      - name: reviewer_id
+        tests:
+          - not_null
+          - unique
+
+
+  - name: silver_fct_review
+    description: "Review fact table"
+    columns:
+      - name: review_sk
+        tests:
+          - not_null
+          - unique
+      - name: reviewer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_dim_reviewer')
+              field: reviewer_id
+      - name: product_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_dim_products')
+              field: product_id
+      - name: date_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_dim_date')
+              field: date_id
+      - name: rating
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1.0, 2.0, 3.0, 4.0, 5.0]
+              quote: false 
+      - name: review_date
+        tests:
+          - not_null
