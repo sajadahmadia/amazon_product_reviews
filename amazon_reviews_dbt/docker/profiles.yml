@@ -1,0 +1,11 @@
+amazon_reviews_dbt:
+  outputs:
+    staging:
+      type: bigquery
+      method: service-account
+      project: amazon-reviews-project-465010
+      dataset: dbt_staging
+      keyfile: /opt/airflow/keys/service-account.json
+      location: EU
+      threads: 4
+  target: staging

@@ -4,7 +4,10 @@
         schema='gold'
     )
 }}
+-- Answer to the main question:
+-- here, I assumed that the main question asked to find the avg rating per year-month across the top five product categories
 
+-- finding the top 5 product categories, based on the number of times that their products were reviewed
 with top_five_categories as (
 select p.primary_category, 
     count(distinct p.product_id) as product_count

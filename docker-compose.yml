@@ -33,6 +33,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./keys:/opt/airflow/keys
+      - ./amazon_reviews_dbt:/opt/airflow/dbt
     ports:
       - "8080:8080"
     command: webserver
@@ -50,6 +51,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./keys:/opt/airflow/keys
+      - ./amazon_reviews_dbt:/opt/airflow/dbt
     command: scheduler
 
 volumes:

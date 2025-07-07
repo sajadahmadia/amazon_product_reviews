@@ -33,9 +33,9 @@ default_args = {
 }
 
 dag = DAG(
-    'amazon_reviews_category_sample',
+    'amazon_reviews_main_files_local',
     default_args=default_args,
-    description='Process sample Amazon review files',
+    description='Process the main large files on local',
     schedule_interval=None,
     catchup=False,
 )
@@ -58,8 +58,8 @@ download_metadata_file = PythonOperator(
     task_id='download_metadata_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Toys_and_Games.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/meta_Toys_and_Games.json.gz'
+        'url': 'https://snap.stanford.edu/data/amazon/productGraph/metadata.json.gz',
+        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/metadata.json.gz'
     },
     dag=dag,
 )
@@ -68,8 +68,8 @@ download_reviews_file = PythonOperator(
     task_id='download_reviews_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Toys_and_Games.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/reviews_Toys_and_Games.json.gz'
+        'url': 'https://snap.stanford.edu/data/amazon/productGraph/item_dedup.json.gz',
+        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/item_dedup.json.gz'
     },
     dag=dag,
 )
@@ -79,8 +79,8 @@ transform_metadata = PythonOperator(
     task_id='transform_metadata',
     python_callable=transform_to_valid_json,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/meta_Toys_and_Games.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/meta_Toys_and_Games.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/metadata.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/processed/metadata.jsonl'
     },
     dag=dag,
 )
@@ -89,8 +89,8 @@ transform_reviews = PythonOperator(
     task_id='transform_reviews',
     python_callable=decompress_large_file,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/reviews_Toys_and_Games.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/reviews_Toys_and_Games.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/item_dedup.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/processed/item_dedup.jsonl'
     },
     dag=dag,
 )
@@ -100,7 +100,7 @@ load_metadata_to_bq = PythonOperator(
     task_id='load_metadata_to_bigquery',
     python_callable=load_json_to_bigquery,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/processed/meta_Toys_and_Games.jsonl',
+        'input_gcs': f'gs://{BUCKET_NAME}/processed/metadata.jsonl',
         'output_table': f'{PROJECT_ID}.{DATASET_ID}.metadata',
         'schema': METADATA_SCHEMA
     },
@@ -111,7 +111,7 @@ load_reviews_to_bq = PythonOperator(
     task_id='load_reviews_data_to_bigquery',
     python_callable=load_json_to_bigquery,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/processed/reviews_Toys_and_Games.jsonl',
+        'input_gcs': f'gs://{BUCKET_NAME}/processed/item_dedup.jsonl',
         'output_table': f'{PROJECT_ID}.{DATASET_ID}.items_dedup'
     },
     dag=dag,

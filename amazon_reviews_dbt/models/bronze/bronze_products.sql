@@ -5,6 +5,14 @@
     )
 }}
 
+WITH cte AS (
+    {% if target.name == 'staging' %}
+        SELECT * FROM {{ source('dbt_staging_landing_zone', 'metadata') }}
+    {% else %}
+        SELECT * FROM {{ source('landing_zone', 'metadata') }}
+    {% endif %}
+)
+
 select asin as product_id,
     title as product_name,
     description as product_description,
@@ -15,4 +23,4 @@ select asin as product_id,
     salesRank as sales_rank_json,
     related as related_products_json,
     current_timestamp() as _loaded_at
-from {{source("landing_zone","metadata")}}
+from cte

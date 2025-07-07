@@ -56,3 +56,27 @@ sources:
             description: "brand name"
           - name: categories
             description: "list of categories the product belongs to"
+
+  - name: dbt_staging_landing_zone
+    database: amazon-reviews-project-465010
+    schema: dbt_staging_landing_zone
+    description: "Test data from Airflow pipeline"
+    
+    tables:
+      - name: items_dedup
+        description: "Test reviews data"
+        columns:
+          - name: reviewerID
+            description: "ID of the reviewer"
+            tests:
+              - not_null  
+
+      - name: metadata
+        description: "Test metadata"
+        columns:
+          - name: asin
+            description: "Product ID"
+            tests:
+              - not_null
+              - unique:
+                  severity: warn
