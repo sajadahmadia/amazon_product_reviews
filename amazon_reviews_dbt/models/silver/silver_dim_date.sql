@@ -23,7 +23,7 @@ select cast(format_date('%Y%m%d', date_day) as int64) date_id,
     extract(year from date_day) year,
     extract(month from date_day) month,
     extract(day from date_day) day,
-    format_date('%Y-%m', date_day) as year_month, 
+    date_trunc(date_day, month) as year_month, 
     extract(dayofweek from date_day) as day_of_week,
     case when extract(dayofweek from date_day) in (1, 7) then true else false end as is_weekend,
     current_timestamp() as _loaded_at
