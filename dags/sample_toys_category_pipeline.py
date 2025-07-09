@@ -4,23 +4,11 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-from pipeline_functions import download_to_gcs, transform_to_valid_json, decompress_large_file, load_json_to_bigquery
-from google.cloud import bigquery
-
-BUCKET_NAME = "interview-task-fd033c3b"
-PROJECT_ID = "amazon-reviews-project-465010"
-DATASET_ID = "dbt_staging_landing_zone"
-METADATA_SCHEMA = [
-    bigquery.SchemaField("asin",        "STRING", mode="REQUIRED"),
-    bigquery.SchemaField("title",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("description", "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("price",       "STRING",  mode="NULLABLE"),
-    bigquery.SchemaField("brand",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("imUrl",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("categories",  "JSON",   mode="NULLABLE"),
-    bigquery.SchemaField("salesRank",   "JSON",   mode="NULLABLE"),
-    bigquery.SchemaField("related",     "JSON",   mode="NULLABLE"),
-]
+from config.settings import PROJECT_ID, DATASET_ID, BUCKET_NAME, EXTRACTED_PATH, PROCESSED_PATH, SAMPLE_TOYS_METADTA_URL, SAMPLE_TOYS_REVIEWS_URL
+from config.schemas import METADATA_SCHEMA
+from tasks.extract import download_to_gcs
+from tasks.transform import transform_to_valid_json, decompress_large_file
+from tasks.load import load_json_to_bigquery
 
 
 default_args = {
@@ -28,7 +16,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': datetime(2025, 7, 6),
     'email_on_failure': False,
-    'retries': 1,
+    'retries': 3,
     'retry_delay': timedelta(minutes=5),
 }
 
@@ -58,8 +46,8 @@ download_metadata_file = PythonOperator(
     task_id='download_metadata_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Toys_and_Games.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/meta_Toys_and_Games.json.gz'
+        'url': SAMPLE_TOYS_METADTA_URL,
+        'gcs_path': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/meta_Toys_and_Games.json.gz'
     },
     dag=dag,
 )
@@ -68,8 +56,8 @@ download_reviews_file = PythonOperator(
     task_id='download_reviews_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Toys_and_Games.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/reviews_Toys_and_Games.json.gz'
+        'url': SAMPLE_TOYS_REVIEWS_URL,
+        'gcs_path': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/reviews_Toys_and_Games.json.gz'
     },
     dag=dag,
 )
@@ -79,8 +67,8 @@ transform_metadata = PythonOperator(
     task_id='transform_metadata',
     python_callable=transform_to_valid_json,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/meta_Toys_and_Games.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/meta_Toys_and_Games.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/meta_Toys_and_Games.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/meta_Toys_and_Games.jsonl'
     },
     dag=dag,
 )
@@ -89,8 +77,8 @@ transform_reviews = PythonOperator(
     task_id='transform_reviews',
     python_callable=decompress_large_file,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/reviews_Toys_and_Games.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/reviews_Toys_and_Games.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/reviews_Toys_and_Games.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/reviews_Toys_and_Games.jsonl'
     },
     dag=dag,
 )
@@ -100,7 +88,7 @@ load_metadata_to_bq = PythonOperator(
     task_id='load_metadata_to_bigquery',
     python_callable=load_json_to_bigquery,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/processed/meta_Toys_and_Games.jsonl',
+        'input_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/meta_Toys_and_Games.jsonl',
         'output_table': f'{PROJECT_ID}.{DATASET_ID}.metadata',
         'schema': METADATA_SCHEMA
     },
