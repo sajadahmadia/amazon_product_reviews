@@ -106,15 +106,9 @@ load_reviews_to_bq = PythonOperator(
 
 )
 
-run_dbt_models = BashOperator(
-    task_id='run_dbt_models',
-    bash_command='cd /opt/airflow/dbt && dbt run --profiles-dir docker',
-    dag=dag,
-)
-
-run_dbt_test = BashOperator(
-    task_id='run_dbt_test',
-    bash_command='cd /opt/airflow/dbt && dbt test --profiles-dir docker',
+run_dbt_build = BashOperator(
+    task_id='run_dbt_build',
+    bash_command='cd /opt/airflow/dbt && dbt build --profiles-dir docker',
     dag=dag,
 )
 
@@ -122,4 +116,4 @@ run_dbt_test = BashOperator(
 # running parallaly
 create_dataset >> download_metadata_file >> transform_metadata >> load_metadata_to_bq
 create_dataset >> download_reviews_file >> transform_reviews >> load_reviews_to_bq
-[load_metadata_to_bq, load_reviews_to_bq] >> run_dbt_models >> run_dbt_test
+[load_metadata_to_bq, load_reviews_to_bq] >> run_dbt_build

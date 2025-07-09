@@ -28,6 +28,13 @@ models:
         tests:
           - not_null
           - unique
+      - name: price_usd
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10000
+              config:
+                severity: warn
 
   - name: silver_dim_reviewer
     description: "Reviewer dimension table"
@@ -72,3 +79,10 @@ models:
       - name: review_date
         tests:
           - not_null
+      - name: review_text
+        tests:
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              min_value: 1
+              max_value: 50000
+              config:
+                severity: warn
