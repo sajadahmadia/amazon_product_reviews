@@ -8,7 +8,7 @@ import ast
 import tempfile
 
 
-def decompress_large_file(input_gcs: str, output_gcs: str, buffer_size: int = 1024 * 1024):
+def decompress_gzip_file(input_gcs: str, output_gcs: str, buffer_size: int = 1024 * 1024):
     """since we can't import compressed gz files larger than 4GB into bigquery, we need to decompress them.
     OPTIMIZATION 1: use of streaming files, no pressure on memory
     OPTIMIZATON 2: direct gcs to gcs transfer, no intermediary writes

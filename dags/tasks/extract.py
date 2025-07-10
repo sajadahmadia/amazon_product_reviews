@@ -5,13 +5,12 @@ import logging
 import time
 
 
-
 @retry(
     stop_max_attempt_number=5,
     wait_exponential_multiplier=1000,
     wait_exponential_max=60000
 )
-def download_to_gcs(url: str, gcs_path: str, chunk_size: int = 100 * 1024 * 1024, timeout: int = 30) -> dict:
+def download_to_gcs(url: str, gcs_path: str, chunk_size: int = 10 * 1024 * 1024, timeout: int = 30) -> dict:
     """
     Download large files to GCS with automatic retry
 

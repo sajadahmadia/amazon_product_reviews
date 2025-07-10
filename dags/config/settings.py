@@ -7,8 +7,8 @@ DATASET_ID = "dbt_staging_landing_zone"
 METADATA_URL = "https://snap.stanford.edu/data/amazon/productGraph/metadata.json.gz"
 REVIEWS_URL = "https://snap.stanford.edu/data/amazon/productGraph/item_dedup.json.gz"
 
-SAMPLE_TOYS_METADTA_URL = "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Toys_and_Games.json.gz"
-SAMPLE_TOYS_REVIEWS_URL = "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Toys_and_Games.json.gz"  
+SAMPLE_TOYS_METADATA_URL = "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Toys_and_Games.json.gz"
+SAMPLE_TOYS_REVIEWS_URL = "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Toys_and_Games.json.gz"
 # processing config
 CHUNK_SIZE = 10 * 1024 * 1024
 DOWNLOAD_TIMEOUT = 30

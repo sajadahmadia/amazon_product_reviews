@@ -32,7 +32,7 @@ select
     reviewer_text as review_text,
     timestamp_seconds(unix_review_time) as review_timestamp 
 from {{ref("bronze_reviews")}}
-tablesample SYSTEM (10 PERCENT)
+{# tablesample SYSTEM (10 PERCENT) #}
 
 where unix_review_time is not null
     and reviewer_id is not null

@@ -1,45 +1,36 @@
 # dags/amazon_reviews_pipeline.py
 from datetime import datetime, timedelta
+from pytz import timezone
 from airflow import DAG
+# importing the operators
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-from pipeline_functions import download_to_gcs, transform_to_valid_json, decompress_large_file, load_json_to_bigquery
-from google.cloud import bigquery
-
-BUCKET_NAME = "interview-task-fd033c3b"
-PROJECT_ID = "amazon-reviews-project-465010"
-DATASET_ID = "dbt_staging_landing_zone"
-METADATA_SCHEMA = [
-    bigquery.SchemaField("asin",        "STRING", mode="REQUIRED"),
-    bigquery.SchemaField("title",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("description", "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("price",       "STRING",  mode="NULLABLE"),
-    bigquery.SchemaField("brand",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("imUrl",       "STRING", mode="NULLABLE"),
-    bigquery.SchemaField("categories",  "JSON",   mode="NULLABLE"),
-    bigquery.SchemaField("salesRank",   "JSON",   mode="NULLABLE"),
-    bigquery.SchemaField("related",     "JSON",   mode="NULLABLE"),
-]
+# importing the custom functions
+from tasks.extract import download_to_gcs
+from tasks.transform import transform_to_valid_json, decompress_gzip_file
+from tasks.load import load_json_to_bigquery
+# importing the constants
+from config.settings import PROJECT_ID, DATASET_ID, BUCKET_NAME, EXTRACTED_PATH, PROCESSED_PATH, METADATA_URL, REVIEWS_URL
+from config.schemas import METADATA_SCHEMA
 
 
 default_args = {
     'owner': 'sajad',
     'depends_on_past': False,
-    'start_date': datetime(2025, 7, 6),
+    'start_date': datetime(2025, 7, 15, 8, 0, 0, tzinfo=timezone('Europe/Amsterdam')),
     'email_on_failure': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5)
 }
 
 dag = DAG(
     'amazon_reviews_main_files_local',
     default_args=default_args,
-    description='Process the main large files on local',
-    schedule_interval=None,
-    catchup=False,
+    description='process the main large files on local',
+    schedule_interval='0 8 * * *',  # to run everyday at 8 am amsterdam time
+    catchup=False
 )
-
 
 
 create_dataset = BigQueryInsertJobOperator(
@@ -59,8 +50,8 @@ download_metadata_file = PythonOperator(
     task_id='download_metadata_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'https://snap.stanford.edu/data/amazon/productGraph/metadata.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/metadata.json.gz'
+        'url': METADATA_URL,
+        'gcs_path': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/metadata.json.gz'
     },
     dag=dag,
 )
@@ -69,8 +60,8 @@ download_reviews_file = PythonOperator(
     task_id='download_reviews_file',
     python_callable=download_to_gcs,
     op_kwargs={
-        'url': 'https://snap.stanford.edu/data/amazon/productGraph/item_dedup.json.gz',
-        'gcs_path': f'gs://{BUCKET_NAME}/extracted_files/item_dedup.json.gz'
+        'url': REVIEWS_URL,
+        'gcs_path': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/item_dedup.json.gz'
     },
     dag=dag,
 )
@@ -80,20 +71,22 @@ transform_metadata = PythonOperator(
     task_id='transform_metadata',
     python_callable=transform_to_valid_json,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/metadata.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/metadata.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/metadata.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/metadata.jsonl'
     },
     dag=dag,
+    sla=timedelta(minutes=45)
 )
 
 transform_reviews = PythonOperator(
     task_id='transform_reviews',
-    python_callable=decompress_large_file,
+    python_callable=decompress_gzip_file,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/extracted_files/item_dedup.json.gz',
-        'output_gcs': f'gs://{BUCKET_NAME}/processed/item_dedup.jsonl'
+        'input_gcs': f'gs://{BUCKET_NAME}/{EXTRACTED_PATH}/item_dedup.json.gz',
+        'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/item_dedup.jsonl'
     },
     dag=dag,
+    sla=timedelta(minutes=30)
 )
 
 
@@ -101,7 +94,7 @@ load_metadata_to_bq = PythonOperator(
     task_id='load_metadata_to_bigquery',
     python_callable=load_json_to_bigquery,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/processed/metadata.jsonl',
+        'input_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/metadata.jsonl',
         'output_table': f'{PROJECT_ID}.{DATASET_ID}.metadata',
         'schema': METADATA_SCHEMA
     },
@@ -112,27 +105,25 @@ load_reviews_to_bq = PythonOperator(
     task_id='load_reviews_data_to_bigquery',
     python_callable=load_json_to_bigquery,
     op_kwargs={
-        'input_gcs': f'gs://{BUCKET_NAME}/processed/item_dedup.jsonl',
+        'input_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/item_dedup.jsonl',
         'output_table': f'{PROJECT_ID}.{DATASET_ID}.items_dedup'
     },
     dag=dag,
 
 )
 
-run_dbt_models = BashOperator(
+run_dbt_build = BashOperator(
     task_id='run_dbt_models',
-    bash_command='cd /opt/airflow/dbt && dbt run --profiles-dir docker',
+    bash_command='cd /opt/airflow/dbt && dbt build --profiles-dir docker',
     dag=dag,
-)
-
-run_dbt_test = BashOperator(
-    task_id='run_dbt_test',
-    bash_command='cd /opt/airflow/dbt && dbt test --profiles-dir docker',
-    dag=dag,
+    sla=timedelta(minutes=10)
 )
 
 
-# running parallaly
-create_dataset >> download_metadata_file >> transform_metadata >> load_metadata_to_bq
-create_dataset >> download_reviews_file >> transform_reviews >> load_reviews_to_bq
-[load_metadata_to_bq, load_reviews_to_bq] >> run_dbt_models >> run_dbt_test
+# running in parallel
+create_dataset >> [download_metadata_file, download_reviews_file]
+
+download_metadata_file >> transform_metadata >> load_metadata_to_bq
+download_reviews_file >> transform_reviews >> load_reviews_to_bq
+
+[load_metadata_to_bq, load_reviews_to_bq] >> run_dbt_build
