@@ -17,7 +17,7 @@ from config.schemas import METADATA_SCHEMA
 default_args = {
     'owner': 'sajad',
     'depends_on_past': False,
-    'start_date': datetime(2025, 7, 15, 8, 0, 0, tzinfo=timezone('Europe/Amsterdam')),
+    'start_date': datetime(2025, 7, 9, 8, 0, 0, tzinfo=timezone('Europe/Amsterdam')),
     'email_on_failure': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5)
@@ -85,7 +85,7 @@ transform_reviews = PythonOperator(
         'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/reviews_Toys_and_Games.jsonl'
     },
     dag=dag,
-    sla=timedelta(minutes=10)
+    sla=timedelta(seconds=10)
 )
 
 
