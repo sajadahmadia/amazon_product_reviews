@@ -85,7 +85,7 @@ transform_reviews = PythonOperator(
         'output_gcs': f'gs://{BUCKET_NAME}/{PROCESSED_PATH}/reviews_Toys_and_Games.jsonl'
     },
     dag=dag,
-    sla=timedelta(seconds=10)
+    sla=timedelta(minutes=10)
 )
 
 

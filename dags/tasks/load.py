@@ -4,8 +4,8 @@ import logging
 
 def load_json_to_bigquery(input_gcs, output_table, schema=None):
     """a simple function to load results to bigquery from a gcs
-    OPTIMIZATION a: allow some bad records to prevent full job failure
-    OPTIMIZATION 3: schema provided to skip inference which makes the job faster in large files
+    OPTIMIZATION 1: allow some bad records to prevent full job failure
+    OPTIMIZATION 2: schema provided to skip inference which makes the job faster in large files
     """
     # loading items into bigquery
     client = bigquery.Client()
