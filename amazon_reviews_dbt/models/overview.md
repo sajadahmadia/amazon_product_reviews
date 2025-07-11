@@ -4,6 +4,6 @@
 Hey, welcome to Amazon Reviews Pipeline documentation!
 
 Here is the schema of the fact dimension model:
-![fact dimension model](amazon_reviews_dbt/assets/fact_dimension_modeling.png)
+![fact dimension model](https://raw.githubusercontent.com/sajadahmadia/amazon_product_reviews/main/amazon_reviews_dbt/assets/erd.png)
 
 {% enddocs %}

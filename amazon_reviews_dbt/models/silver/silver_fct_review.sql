@@ -26,7 +26,7 @@ select
     rating,
     -- assumption: first number in this array shows upvoted likes the review could get
     cast(helpful_array[safe_offset(0)] as int64) as helpful_votes,
-    --assumption: second number shows total vots
+    --assumption: second number shows total votes
     cast(helpful_array[safe_offset(1)] as int64) as total_votes,
     review_summary,
     reviewer_text as review_text,
