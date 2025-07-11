@@ -18,7 +18,7 @@ from config.schemas import METADATA_SCHEMA
 default_args = {
     'owner': 'sajad',
     'depends_on_past': False,
-    'start_date': datetime(2025, 7, 9, 8, 0, 0, tzinfo=timezone('Europe/Amsterdam')),
+    'start_date': datetime(2025, 7, 10, 8, 0, 0, tzinfo=timezone('Europe/Amsterdam')),
     'email_on_failure': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5)
@@ -29,7 +29,8 @@ dag = DAG(
     default_args=default_args,
     description='process the main large files on local',
     schedule_interval='0 8 * * *',  # to run everyday at 8 am amsterdam time
-    catchup=False
+    catchup=False,
+    max_active_runs=1
 )
 
 
