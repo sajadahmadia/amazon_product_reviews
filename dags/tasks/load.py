@@ -11,6 +11,7 @@ def load_json_to_bigquery(input_gcs, output_table, schema=None):
     client = bigquery.Client()
 
     job_config = bigquery.LoadJobConfig(
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
         autodetect=True,
         max_bad_records=10,
